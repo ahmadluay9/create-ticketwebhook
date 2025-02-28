@@ -58,7 +58,8 @@ def webhook():
             "issue": issue,
             "status": "Open",  
             "name": name,
-            "email_address": email  
+            "email_address": email,
+            "ticket_history_file": ""
         }
         
         # BigQuery insertion
