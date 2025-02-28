@@ -41,7 +41,7 @@ def webhook():
         parameters = request_data.get('sessionInfo', {}).get('parameters', {})
         
         # Generate required fields
-        ticket_id = str(uuid.uuid4())  
+        ticket_id = str(uuid.uuid4())[:8]  
         created_at = datetime.utcnow().isoformat()
 
         # Extract user-provided fields
@@ -114,6 +114,89 @@ def webhook():
                 "messages": [{
                     "text": {
                         "text": ["An error occurred while processing your request"]
+                    }
+                }]
+            }
+        }), 500
+
+@app.route('/check_status', methods=['POST'])
+def check_status():
+    try:
+        # Log the raw incoming request for debugging
+        request_data = request.get_json()
+        logger.info("Received request: %s", request_data)
+
+        # Extract parameters from the request
+        parameters = request_data.get('sessionInfo', {}).get('parameters', {})
+        ticket_id = parameters.get('ticketid', 'N/A')
+        logger.info("Extracted parameters - Ticket ID: %s", ticket_id)
+        
+        if not bq_client:
+            logger.error("BigQuery client not initialized")
+            return jsonify({"error": "Server configuration error"}), 500               
+            
+        # Query BigQuery for ticket status
+        status_message = "No ticket found with the provided ID."
+        status = "Not Found"
+        try:
+            table_id = f"{BIGQUERY_PROJECT_ID}.{BIGQUERY_DATASET_ID}.{BIGQUERY_TABLE_ID}"
+            query = f"""
+                SELECT status, created_at, issue 
+                FROM `{table_id}` 
+                WHERE ticket_id = @ticket_id
+            """
+            job_config = bigquery.QueryJobConfig(
+                query_parameters=[
+                    bigquery.ScalarQueryParameter("ticket_id", "STRING", ticket_id)
+                ]
+            )
+            query_job = bq_client.query(query, job_config=job_config)
+            results = list(query_job.result())  # Convert to list to check for results
+
+            if results:
+                # Assuming ticket_id is unique, take the first result
+                ticket = results[0]
+                status = ticket.status
+                created_at = ticket.created_at
+                issue = ticket.issue
+                status_message = (
+                    "Ticket Status:\n\n"
+                    f"Ticket ID: **{ticket_id}**\n"
+                    f"Created At: **{created_at}**\n"
+                    f"Issue: **{issue}**\n"
+                    f"Status: **{status}**\n"
+                )
+        except Exception as bq_error:
+            logger.error("BigQuery error: %s", str(bq_error), exc_info=True)
+            return jsonify({"error": "Database error"}), 500
+
+        # Create response
+        response = {
+            "fulfillmentResponse": {
+                "messages": [{
+                    "text": {
+                        "text": [status_message]
+                    }
+                }]
+            },
+            "sessionInfo": {
+                "parameters": {
+                    "ticketid": ticket_id,
+                    "status": status
+                }
+            }
+        }
+
+        logger.info("Sending response: %s", response)
+        return jsonify(response)
+
+    except Exception as e:
+        logger.error("Error checking ticket status: %s", str(e), exc_info=True)
+        return jsonify({
+            "fulfillmentResponse": {
+                "messages": [{
+                    "text": {
+                        "text": ["An error occurred while checking your ticket status."]
                     }
                 }]
             }

@@ -171,3 +171,4 @@ cython_debug/
 .pypirc
 
 request-file.json
+request-file-copy.json
