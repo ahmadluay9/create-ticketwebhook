@@ -1,2 +1,4 @@
 Flask
 google-cloud-bigquery
+google-cloud-aiplatform
+google-cloud-discoveryengine
