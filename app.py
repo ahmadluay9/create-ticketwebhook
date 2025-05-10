@@ -129,7 +129,7 @@ def check_status():
 
         # Extract parameters from the request
         parameters = request_data.get('sessionInfo', {}).get('parameters', {})
-        ticket_id = parameters.get('ticketid', 'N/A')
+        ticket_id = parameters.get('ticket_id', 'N/A')
         logger.info("Extracted parameters - Ticket ID: %s", ticket_id)
         
         if not bq_client:
