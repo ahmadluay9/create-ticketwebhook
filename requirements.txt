@@ -2,3 +2,7 @@ Flask
 google-cloud-bigquery
 google-cloud-aiplatform
 google-cloud-discoveryengine
+google-cloud-dialogflow-cx
+twilio
+python-dotenv
+pyngrok

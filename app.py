@@ -4,8 +4,11 @@ from google.cloud import bigquery
 import os
 from datetime import datetime
 import uuid
+from dotenv import load_dotenv
 
+load_dotenv()
 app = Flask(__name__)
+os.getenv("PROJECT_ID")
 
 # Configure logging
 logging.basicConfig(
@@ -15,9 +18,9 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # BigQuery Configuration
-BIGQUERY_PROJECT_ID = "eikon-dev-ai-team"  
-BIGQUERY_DATASET_ID = "ticketing_dataset"  
-BIGQUERY_TABLE_ID = "ticket_table"  
+BIGQUERY_PROJECT_ID = os.getenv("BIGQUERY_PROJECT_ID")
+BIGQUERY_DATASET_ID = os.getenv("BIGQUERY_DATASET_ID") 
+BIGQUERY_TABLE_ID = os.getenv("BIGQUERY_TABLE_ID") 
 
 # Set the environment variable to suppress the project ID warning
 os.environ["GOOGLE_CLOUD_PROJECT"] = BIGQUERY_PROJECT_ID
