@@ -25,7 +25,6 @@ app = Flask(__name__)
 logger.info("Flask application initialized.")
 
 # --- Load environment variables ---
-# It's crucial to log whether these are loaded correctly or are missing.
 account_sid = os.environ.get("TWILIO_ACCOUNT_SID")
 auth_token = os.environ.get("TWILIO_AUTH_TOKEN")
 language_code = os.environ.get("LANGUAGE_CODE")
@@ -46,7 +45,7 @@ logger.info(f"NGROK Authtoken loaded: {'Yes' if ngrok_authtoken else 'No'}")
 # --- Flask Route ---
 @app.route("/")
 def home():
-    return "<h1>Hello from Flask"
+    return "<h1>Twilio Dialogflow Whatsapp Integration"
     
 @app.route("/twilio-dialogflowcx", methods=["POST"])
 def twilio_dialogflowcx_handler(): # Renamed handler function for clarity
@@ -57,7 +56,6 @@ def twilio_dialogflowcx_handler(): # Renamed handler function for clarity
     logger.info("Received POST request on /twilio-dialogflowcx")
 
     # --- Form Data Handling ---
-    # In Flask, form data is accessed via request.form
     try:
         received_msg = request.form.get("Body")
         user_number = request.form.get("From") # This will be like 'whatsapp:+1234567890'
@@ -90,10 +88,8 @@ def twilio_dialogflowcx_handler(): # Renamed handler function for clarity
         return FlaskResponse("Failed to initialize Twilio service.", status=500)
 
     # --- Call Dialogflow CX Agent ---
-    # The session_id for Dialogflow CX is often the user's identifier to maintain context.
-    # Ensure DialogFlowReply class has robust logging.
     try:
-        # The user_number (e.g., 'whatsapp:+1234567890') is a good candidate for session_id
+        # Use user_number for session ID to maintain context
         dialogflow_cx_session = DialogFlowReply(session_id=user_number)
         logger.info(f"DialogFlowReply instance created for session_id: {user_number}")
 
@@ -113,7 +109,7 @@ def twilio_dialogflowcx_handler(): # Renamed handler function for clarity
 
     except Exception as e:
         logger.error(f"Error during Dialogflow CX request: {e}", exc_info=True)
-        # It's often good practice to send a generic error message back to the user via Twilio
+        # Send generic error to user
         try:
             error_reply = "Sorry, I encountered an error. Please try again later."
             twilio_client.messages.create(
