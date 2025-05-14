@@ -18,9 +18,10 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # BigQuery Configuration
-BIGQUERY_PROJECT_ID = os.getenv("BIGQUERY_PROJECT_ID")
+BIGQUERY_PROJECT_ID = os.getenv("PROJECT_ID")
 BIGQUERY_DATASET_ID = os.getenv("BIGQUERY_DATASET_ID") 
-BIGQUERY_TABLE_ID = os.getenv("BIGQUERY_TABLE_ID") 
+BIGQUERY_TABLE_ID = os.getenv("BIGQUERY_TABLE_ID")
+BIGQUERY_TABLE_ID_WA = os.getenv("BIGQUERY_TABLE_ID_WA") 
 
 # Set the environment variable to suppress the project ID warning
 os.environ["GOOGLE_CLOUD_PROJECT"] = BIGQUERY_PROJECT_ID
@@ -104,6 +105,100 @@ def webhook():
                     "ticket_id": ticket_id,
                     "status": "Open",
                     "email_address": email
+                }
+            }
+        }
+
+        logger.info("Sending response: %s", response)
+        return jsonify(response)
+
+    except Exception as e:
+        logger.error("Error processing webhook: %s", str(e), exc_info=True)
+        return jsonify({
+            "fulfillmentResponse": {
+                "messages": [{
+                    "text": {
+                        "text": ["An error occurred while processing your request"]
+                    }
+                }]
+            }
+        }), 500
+
+@app.route('/create', methods=['POST'])
+def create_ticket():
+    try:
+        # Log the raw incoming request for debugging
+        request_data = request.get_json()
+        logger.info("Received request: %s", request_data)
+
+        # Extract parameters from the request
+        parameters = request_data.get('sessionInfo', {}).get('parameters', {})
+        
+        # Generate required fields
+        ticket_id = str(uuid.uuid4())[:8]  
+        created_at = datetime.utcnow().isoformat()
+
+        # Extract user-provided fields
+        email = parameters.get('email', 'N/A')
+        issue = parameters.get('issue', 'N/A')
+        name = parameters.get('name', {}).get('name', 'N/A')
+        phone_number = parameters.get('phone', 'N/A')
+
+        logger.info("Extracted parameters - Name: %s, Email: %s, Issue: %s, phone_number: %s", name, email, issue, phone_number)
+        
+        # Prepare row matching BigQuery schema
+        row_to_insert = {
+            "ticket_id": ticket_id,
+            "created_at": created_at,
+            "issue": issue,
+            "status": "Open",  
+            "name": name,
+            "phone_number": phone_number,
+            "email_address": email,
+            "ticket_history_file": ""
+        }
+        
+        # BigQuery insertion
+        if bq_client:
+            try:
+                table_id  = f"{BIGQUERY_PROJECT_ID}.{BIGQUERY_DATASET_ID}.{BIGQUERY_TABLE_ID_WA}"
+                errors = bq_client.insert_rows_json(table_id, [row_to_insert])
+
+                if not errors:
+                    logger.info("Data inserted successfully")
+                else:
+                    logger.error("BigQuery errors: %s", errors)
+                    return jsonify({"error": "Database insertion failed"}), 500
+            except Exception as bq_error:
+                logger.error("BigQuery error: %s", str(bq_error), exc_info=True)
+                return jsonify({"error": "Database error"}), 500
+        else:
+            logger.error("BigQuery client not initialized")
+            return jsonify({"error": "Server configuration error"}), 500
+            
+        # Create response
+        response = {
+            "fulfillmentResponse": {
+                "messages": [{
+                    "text": {
+                        "text": [
+                            "Ticket Summary:\n \n"
+                            f"Ticket ID: **{ticket_id}** \n"
+                            f"Name: **{name}** \n"
+                            f"Email address: **{email}** \n"
+                            f"Issue: **{issue}** \n \n"
+                            f"Phone Number: **{phone_number}** \n"
+                            "Your ticket has been created. A confirmation email has been sent. \n"
+                        ]
+                    }
+                }]
+            },
+            "sessionInfo": {
+                "parameters": {
+                    "ticket_id": ticket_id,
+                    "status": "Open",
+                    "email_address": email,
+                    "phone_number": phone_number
                 }
             }
         }
