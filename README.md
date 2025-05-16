@@ -12,7 +12,7 @@ gcloud run deploy ticket-hook \
   --region us-central1 \
   --platform managed \
   --allow-unauthenticated \
-  --set-env-vars="PROJECT_ID=your-actual-project-id" \
+  --set-env-vars="PROJECT_ID=eikon-dev-ai-team" \
   --set-env-vars="BIGQUERY_DATASET_ID=your-dataset-id" \
   --set-env-vars="BIGQUERY_TABLE_ID=your-table-id" \
   --set-env-vars="BIGQUERY_TABLE_ID_WA=your-other-table-id"

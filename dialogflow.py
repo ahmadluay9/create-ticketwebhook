@@ -13,7 +13,9 @@ logging.basicConfig(level=logging.INFO,
                     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
 # Set the GOOGLE_APPLICATION_CREDENTIALS environment variable
-os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = os.getenv("SERVICE_ACCOUNT_PATH")
+# os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = os.getenv("SERVICE_ACCOUNT_PATH")
+PROJECT_ID = os.getenv("PROJECT_ID")
+os.environ["GOOGLE_CLOUD_PROJECT"] = PROJECT_ID
 
 class DialogFlowReply:
     """

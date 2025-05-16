@@ -337,7 +337,6 @@ def check_status():
                 created_at = ticket.created_at
                 issue = ticket.issue
                 status_message = (
-                    "Ticket Status:\n\n"
                     f"Ticket ID: **{ticket_id}**\n"
                     f"Created At: **{created_at}**\n"
                     f"Issue: **{issue}**\n"
